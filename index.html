@@ -104,50 +104,40 @@
 <body>
     <div id="score">النتيجة: 0</div>
     <div id="lives"></div>
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
     <button id="restartBtn">إعادة التشغيل</button>
     <div class="joystick" id="joystick">
         <div class="joystick-handle"></div>
     </div>
 
     <script>
-        // Retrieve canvas and context
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        // Resize canvas function for mobile-friendly dimensions
-        function resizeCanvas() {
-            canvas.width = document.documentElement.clientWidth;
-            canvas.height = document.documentElement.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // DOM elements
         const scoreDisplay = document.getElementById('score');
         const livesContainer = document.getElementById('lives');
         const restartBtn = document.getElementById('restartBtn');
         const joystick = document.getElementById('joystick');
         const joystickHandle = document.querySelector('.joystick-handle');
 
-        // Load images
+        // تحميل الصور
         const playerNormal = new Image();
         playerNormal.src = 'WhatsApp Image 2025-03-16 at 18.50.41_34008327.jpg';
         const playerLose = new Image();
         playerLose.src = 'WhatsApp Image 2025-03-16 at 18.50.41_3d1ba86e.jpg';
+
+        // صورة القلب الجديدة
         const heartImg = new Image();
         heartImg.src = 'heart.png';
 
-        // Load audio files
+        // تحميل الأصوات
         const catchSound = new Audio('catch.mp3');
         const loseSound = new Audio('lose.mp3');
         const bgMusic = new Audio('background.mp3');
         bgMusic.loop = true;
         bgMusic.volume = 0.2;
 
-        // Unlock audio on first user interaction (click or touch)
-        document.addEventListener('click', unlockAudio, { once: true });
-        document.addEventListener('touchstart', unlockAudio, { once: true });
+        // تفعيل الأصوات
+        document.body.addEventListener('click', unlockAudio, { once: true });
         function unlockAudio() {
             [catchSound, loseSound, bgMusic].forEach(sound => {
                 sound.play().then(() => {
@@ -158,7 +148,7 @@
             bgMusic.play();
         }
 
-        // Player object
+        // كائن اللاعب
         let player = {
             x: 220,
             y: 580,
@@ -172,75 +162,75 @@
             sadAlpha: 1
         };
 
-        // Game variables and arrays
+        // مصفوفات اللعبة
         let hearts = [];
         let particles = [];
         let score = 0;
         let lives = 3;
         let gameOver = false;
         let shake = 0;
+
+        // إعدادات اللعبة
         const heartWidth = 35;
         const heartHeight = 35;
         const baseSpeed = 2;
         const maxSpeed = 6;
+
+        // التحكم
         let keys = {};
         let touchActive = false;
 
-        // Attach keyboard events only if touch is not supported
-        if (!('ontouchstart' in window)) {
-            document.addEventListener('keydown', (e) => keys[e.key] = true);
-            document.addEventListener('keyup', (e) => keys[e.key] = false);
-        }
-
+        // إعداد الأحداث
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
         restartBtn.addEventListener('click', restartGame);
 
-        // Touch control for canvas
+        // دعم اللمس
         let touchStartX = null;
         canvas.addEventListener('touchstart', (e) => {
             if (gameOver) return;
-            e.preventDefault();
             touchStartX = e.touches[0].clientX;
             touchActive = true;
         });
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             if (!touchActive) return;
             const touchX = e.touches[0].clientX;
-            // Use requestAnimationFrame for smoother touch movement
-            requestAnimationFrame(() => {
-                player.x = touchX - player.width / 2;
-                player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-            });
+            const deltaX = touchX - touchStartX;
+            player.x += deltaX * 0.3;
+            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+            touchStartX = touchX;
         });
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            touchActive = false;
-        });
+        canvas.addEventListener('touchend', () => touchActive = false);
 
-        // Joystick control for touch devices
+        // إعداد التحكم بالشاشة
         if ('ontouchstart' in window) {
             joystick.style.display = 'block';
             let dragStart = null;
+
             joystick.addEventListener('touchstart', (e) => {
-                e.preventDefault();
                 dragStart = {
                     x: e.touches[0].clientX,
                     y: e.touches[0].clientY
                 };
             });
+
             joystick.addEventListener('touchmove', (e) => {
-                e.preventDefault();
                 if (!dragStart) return;
                 const deltaX = e.touches[0].clientX - dragStart.x;
                 const deltaY = e.touches[0].clientY - dragStart.y;
                 const angle = Math.atan2(deltaY, deltaX);
                 const distance = Math.min(50, Math.hypot(deltaX, deltaY));
-                joystickHandle.style.transform = `translate(${Math.cos(angle) * distance / 2}px, ${Math.sin(angle) * distance / 2}px)`;
+
+                joystickHandle.style.transform = `translate(
+                    ${Math.cos(angle) * distance / 2}px,
+                    ${Math.sin(angle) * distance / 2}px
+                )`;
+
                 player.x += Math.cos(angle) * distance * 0.1;
                 player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
             });
-            joystick.addEventListener('touchend', (e) => {
-                e.preventDefault();
+
+            joystick.addEventListener('touchend', () => {
                 dragStart = null;
                 joystickHandle.style.transform = 'translate(0, 0)';
             });
@@ -317,12 +307,17 @@
                 ctx.save();
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // رسم اللاعب الحزين مع تأثيرات
                 ctx.save();
                 ctx.globalAlpha = player.sadAlpha;
                 ctx.translate(canvas.width / 2, player.y + player.height / 2);
                 ctx.scale(player.sadScale, player.sadScale);
-                ctx.drawImage(player.image, -player.width / 2, -player.height / 2, player.width, player.height);
+                ctx.drawImage(player.image,
+                    -player.width / 2, -player.height / 2,
+                    player.width, player.height);
                 ctx.restore();
+
                 ctx.shadowColor = "red";
                 ctx.shadowBlur = 20;
                 ctx.fillStyle = '#fff';
@@ -346,7 +341,7 @@
             screenShake();
             drawProgressBar();
 
-            // Update player using keyboard if available
+            // تحريك اللاعب
             if (keys['ArrowLeft'] && player.x > 0) {
                 player.x -= player.speed * (1 + Math.min(score * 0.01, 2));
             }
@@ -354,7 +349,7 @@
                 player.x += player.speed * (1 + Math.min(score * 0.01, 2));
             }
 
-            // Draw player with glow effect
+            // رسم اللاعب مع تأثيرات
             ctx.save();
             ctx.shadowColor = player.glow ? "gold" : "rgba(0, 0, 0, 0.3)";
             ctx.shadowBlur = player.glow ? 20 : 10;
@@ -362,12 +357,13 @@
             ctx.restore();
             player.glow = false;
 
-            // Create hearts randomly
+            // إنشاء القلوب
             if (Math.random() < 0.015 && hearts.length < 5) {
                 const side = Math.random() < 0.5 ? 'left' : 'right';
                 const x = side === 'left'
                     ? Math.random() * (canvas.width / 2 - heartWidth)
                     : canvas.width / 2 + Math.random() * (canvas.width / 2 - heartWidth);
+
                 hearts.push({
                     x: x,
                     y: -heartHeight,
@@ -377,22 +373,24 @@
                 });
             }
 
-            // Update hearts and check collisions
+            // تحديث ورسم القلوب
             for (let i = hearts.length - 1; i >= 0; i--) {
                 const heart = hearts[i];
                 heart.y += heart.speed;
                 heart.angle += heart.angularSpeed;
                 heart.x += Math.sin(heart.y * 0.1) * 2;
+
                 ctx.save();
                 ctx.translate(heart.x + heartWidth / 2, heart.y + heartHeight / 2);
                 ctx.rotate(heart.angle);
                 ctx.drawImage(heartImg, -heartWidth / 2, -heartHeight / 2, heartWidth, heartHeight);
                 ctx.restore();
 
-                // Check for collision with player
+                // التحقق من التقاط
                 if (heart.y + heartHeight > player.y &&
                     heart.x < player.x + player.width &&
                     heart.x + heartWidth > player.x) {
+
                     hearts.splice(i, 1);
                     score++;
                     scoreDisplay.textContent = 'النتيجة: ' + score;
@@ -400,17 +398,19 @@
                     catchSound.currentTime = 0;
                     catchSound.play();
                     createExplosion(heart.x + heartWidth / 2, heart.y + heartHeight / 2);
+
                     if (score % 5 === 0) {
                         hearts.forEach(h => h.speed = Math.max(h.speed - 1, baseSpeed));
                     }
                 }
 
-                // Remove heart if it falls off the screen
+                // التحقق من السقوط
                 if (heart.y > canvas.height) {
                     hearts.splice(i, 1);
                     lives--;
                     updateLives();
                     createExplosion(heart.x + heartWidth / 2, heart.y + heartHeight / 2);
+
                     if (lives <= 0) {
                         gameOver = true;
                         player.image = playerLose;
@@ -421,7 +421,7 @@
                 }
             }
 
-            // Draw explosion particles
+            // رسم الجسيمات
             particles.forEach((particle, index) => {
                 ctx.save();
                 ctx.globalAlpha = particle.alpha;
@@ -430,9 +430,11 @@
                 ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
+
                 particle.x += particle.speedX;
                 particle.y += particle.speedY;
                 particle.alpha -= 0.03;
+
                 if (particle.alpha <= 0) particles.splice(index, 1);
             });
 
