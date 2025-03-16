@@ -104,7 +104,8 @@
 <body>
     <div id="score">النتيجة: 0</div>
     <div id="lives"></div>
-    <canvas id="gameCanvas" width="480" height="640"></canvas>
+    <canvas id="gameCanvas" width="100%" height="100%"></canvas>
+
     <button id="restartBtn">إعادة التشغيل</button>
     <div class="joystick" id="joystick">
         <div class="joystick-handle"></div>
@@ -112,6 +113,9 @@
 
     <script>
         const canvas = document.getElementById('gameCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
         const livesContainer = document.getElementById('lives');
@@ -181,6 +185,11 @@
         let touchActive = false;
 
         // إعداد الأحداث
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
         restartBtn.addEventListener('click', restartGame);
